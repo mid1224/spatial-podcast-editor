@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="ParameterPreset" id="{ca5dc19e-9788-498d-9c12-b66e755d01a0}">
+		<property name="name">
+			<value>DuckingAmount</value>
+		</property>
+		<relationship name="folder">
+			<destination>{8f7cd47c-ca99-41cf-b345-8a20c989300f}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{ddee881c-7e49-4747-afb6-de7d90f67664}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{ddee881c-7e49-4747-afb6-de7d90f67664}">
+		<property name="isGlobal">
+			<value>true</value>
+		</property>
+		<property name="initialValue">
+			<value>0</value>
+		</property>
+		<property name="isExposedRecursively">
+			<value>false</value>
+		</property>
+	</object>
+</objects>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="AudioFile" id="{81f909ef-977a-49a9-9f99-3219d21fff9e}">
+		<property name="assetPath">
+			<value>freesound_community-what-is-it-like-to-be-a-crocodile-27706.mp3</value>
+		</property>
+		<property name="isStreaming">
+			<value>true</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>48</value>
+		</property>
+		<property name="channelCount">
+			<value>1</value>
+		</property>
+		<property name="length">
+			<value>18.744</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{aef35f3b-169e-4216-812b-a1956522ced3}</destination>
+		</relationship>
+	</object>
+</objects>

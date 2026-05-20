@@ -12,45 +12,45 @@ public class AppManager : MonoBehaviour
     public SFXUIController sharedUIController;
 
     [Header("Camera Reference")]
-    public Camera mainCam; // 2. Drag your Orthographic Camera here in the Inspector
+    public Camera mainCam; // 2. Drag your camera here in the Inspector
 
-    private SFXNode currentlySelectedNode;
+    private SFXNode currentlySelectedSfxNode;
+    private VocalNode currentlySelectedVocalNode;
 
     void Start()
     {
         if (mainCam == null) mainCam = Camera.main;
 
-        // --- FORCE FMOD TO ROUTE BUSES ON STARTUP ---
         FMOD.Studio.Bus vocalBus = FMODUnity.RuntimeManager.GetBus("bus:/Vocal");
         vocalBus.lockChannelGroup();
 
         FMOD.Studio.Bus sfxBus = FMODUnity.RuntimeManager.GetBus("bus:/SFX");
         sfxBus.lockChannelGroup();
-        // --------------------------------------------
     }
 
     void Update()
     {
-        // 3. Safety check: Ensure a mouse is actually connected/detected
-        if (Mouse.current == null) return;
+        if (Mouse.current == null || mainCam == null) return;
 
-        // 4. NEW INPUT SYSTEM: Check if left mouse button was clicked this frame
         if (Mouse.current.leftButton.wasPressedThisFrame)
         {
-            // 5. NEW INPUT SYSTEM: Read the 2D screen position of the mouse
             Vector2 mousePos = Mouse.current.position.ReadValue();
-
-            // Cast the ray using the explicit camera reference
             Ray ray = mainCam.ScreenPointToRay(mousePos);
 
-            int layerMask = 1 << LayerMask.NameToLayer("SFXNode");
-
-            if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, layerMask))
+            if (Physics.Raycast(ray, out RaycastHit hit))
             {
-                SFXNode clickedNode = hit.collider.GetComponent<SFXNode>();
-                if (clickedNode != null)
+                SFXNode clickedSfx = hit.collider.GetComponentInParent<SFXNode>();
+                if (clickedSfx != null)
                 {
-                    SelectNode(clickedNode);
+                    SelectSfxNode(clickedSfx);
+                    return;
+                }
+
+                VocalNode clickedVocal = hit.collider.GetComponentInParent<VocalNode>();
+                if (clickedVocal != null)
+                {
+                    SelectVocalNode(clickedVocal);
+                    return;
                 }
             }
         }
@@ -64,19 +64,54 @@ public class AppManager : MonoBehaviour
             return;
         }
 
-        // 1. Generate a random distance and random direction in one line
         Vector2 randomScatter = Random.insideUnitCircle * maxSpawnRadius;
-
-        // 2. Apply the random scatter to the X and Z axes, anchored exactly to your spawnPoint
         Vector3 finalSpawnPos = spawnPoint.position + new Vector3(randomScatter.x, 0f, randomScatter.y);
 
-        // 3. Instantiate the prefab
-        GameObject newNode = Instantiate(sfxNodePrefab, finalSpawnPos, Quaternion.identity);
+        Instantiate(sfxNodePrefab, finalSpawnPos, Quaternion.identity);
     }
 
-    private void SelectNode(SFXNode nodeToSelect)
+    private void SelectSfxNode(SFXNode nodeToSelect)
     {
-        currentlySelectedNode = nodeToSelect;
-        sharedUIController.BindToNode(currentlySelectedNode);
+        if (currentlySelectedVocalNode != null)
+        {
+            currentlySelectedVocalNode.SetSelected(false);
+            currentlySelectedVocalNode = null;
+        }
+
+        if (currentlySelectedSfxNode != null && currentlySelectedSfxNode != nodeToSelect)
+        {
+            currentlySelectedSfxNode.SetSelected(false);
+        }
+
+        currentlySelectedSfxNode = nodeToSelect;
+        currentlySelectedSfxNode.SetSelected(true);
+
+        if (sharedUIController != null)
+        {
+            sharedUIController.BindToNode(currentlySelectedSfxNode);
+        }
+    }
+
+    private void SelectVocalNode(VocalNode nodeToSelect)
+    {
+        if (currentlySelectedSfxNode != null)
+        {
+            currentlySelectedSfxNode.SetSelected(false);
+            currentlySelectedSfxNode = null;
+        }
+
+        if (currentlySelectedVocalNode != null && currentlySelectedVocalNode != nodeToSelect)
+        {
+            currentlySelectedVocalNode.SetSelected(false);
+        }
+
+        currentlySelectedVocalNode = nodeToSelect;
+        currentlySelectedVocalNode.SetSelected(true);
+
+        // Optional: hide SFX UI when vocal node is selected
+        if (sharedUIController != null)
+        {
+            sharedUIController.gameObject.SetActive(false);
+        }
     }
 }

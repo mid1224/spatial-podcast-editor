@@ -1,5 +1,6 @@
 using UnityEngine;
 using FMODUnity;
+using TMPro;
 
 public class VocalNode : MonoBehaviour
 {
@@ -10,6 +11,10 @@ public class VocalNode : MonoBehaviour
     public uint totalLengthMs;
     public FMOD.Channel vocalChannel;
     private FMOD.Sound vocalSound;
+
+    // Selection underline support
+    public bool isSelected = false;
+    public TMP_Text nameLabelUnderIcon;
 
     public void LoadAudioFile(string absolutePath)
     {
@@ -80,6 +85,15 @@ public class VocalNode : MonoBehaviour
         {
             vocalChannel.setPosition(0, FMOD.TIMEUNIT.MS);
             ApplySettings();
+        }
+    }
+
+    public void SetSelected(bool selected)
+    {
+        isSelected = selected;
+        if (nameLabelUnderIcon != null)
+        {
+            nameLabelUnderIcon.fontStyle = isSelected ? FontStyles.Underline : FontStyles.Normal;
         }
     }
 

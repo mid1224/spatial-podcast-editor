@@ -5,7 +5,6 @@ using System.Runtime.InteropServices;
 
 public class SFXNode : MonoBehaviour
 {
-    // Defaulting to false so new nodes spawn silently
     public bool isPlaying = false;
     public bool isLooping = false;
     public float volume = 1.0f;
@@ -17,13 +16,9 @@ public class SFXNode : MonoBehaviour
 
     public void LoadAudioFile(string absolutePath)
     {
-        // --- 1. CLEAN UP ORPHANED AUDIO ---
         ReleaseCurrentAudio();
-
-        // --- 2. FORCE STOP STATE ---
         isPlaying = false;
 
-        // 3. Load the raw audio file into FMOD memory
         FMOD.RESULT result = RuntimeManager.CoreSystem.createSound(
             absolutePath,
             FMOD.MODE._3D | FMOD.MODE.CREATESTREAM,
@@ -36,15 +31,15 @@ public class SFXNode : MonoBehaviour
             return;
         }
 
-        // 4. Spawn the Steam Audio Shell Event
+        // --- FIX 1: Apply loop state BEFORE the engine starts reading the file ---
+        coreSound.setMode(isLooping ? FMOD.MODE.LOOP_NORMAL : FMOD.MODE.LOOP_OFF);
+
         steamAudioEvent = RuntimeManager.CreateInstance("event:/SteamAudio_SFX");
         steamAudioEvent.setUserData(coreSound.handle);
 
-        // 5. Attach the callback hook
         eventCallback = new FMOD.Studio.EVENT_CALLBACK(ProgrammerSoundCallback);
         steamAudioEvent.setCallback(eventCallback, FMOD.Studio.EVENT_CALLBACK_TYPE.CREATE_PROGRAMMER_SOUND);
 
-        // 6. Start the engine
         steamAudioEvent.start();
 
         isAudioLoaded = true;
@@ -52,26 +47,21 @@ public class SFXNode : MonoBehaviour
         ApplySettings();
     }
 
-    // --- NEW: DEDICATED CLEANUP METHOD ---
     private void ReleaseCurrentAudio()
     {
         if (isAudioLoaded)
         {
-            // Stop and release the event instance
             if (steamAudioEvent.isValid())
             {
                 steamAudioEvent.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
                 steamAudioEvent.release();
-                steamAudioEvent.clearHandle(); // Wipes the pointer
+                steamAudioEvent.clearHandle();
             }
-
-            // Release the raw audio file from RAM
             if (coreSound.hasHandle())
             {
                 coreSound.release();
-                coreSound.clearHandle(); // Wipes the pointer
+                coreSound.clearHandle();
             }
-
             isAudioLoaded = false;
         }
     }
@@ -80,7 +70,6 @@ public class SFXNode : MonoBehaviour
     static FMOD.RESULT ProgrammerSoundCallback(FMOD.Studio.EVENT_CALLBACK_TYPE type, IntPtr instancePtr, IntPtr parameterPtr)
     {
         FMOD.Studio.EventInstance instance = new FMOD.Studio.EventInstance(instancePtr);
-
         instance.getUserData(out IntPtr customSoundHandle);
         if (customSoundHandle == IntPtr.Zero) return FMOD.RESULT.OK;
 
@@ -100,7 +89,31 @@ public class SFXNode : MonoBehaviour
 
         steamAudioEvent.setVolume(volume);
         steamAudioEvent.setPaused(!isPlaying);
-        coreSound.setMode(isLooping ? FMOD.MODE.LOOP_NORMAL : FMOD.MODE.LOOP_OFF);
+
+        // Ensure future replays catch the correct mode
+        if (coreSound.hasHandle())
+        {
+            coreSound.setMode(isLooping ? FMOD.MODE.LOOP_NORMAL : FMOD.MODE.LOOP_OFF);
+        }
+
+        // --- FIX 2: Force the live, currently playing channel to update immediately ---
+        if (steamAudioEvent.isValid())
+        {
+            // Dig into the Event wrapper to find the raw channel playing the file
+            steamAudioEvent.getChannelGroup(out FMOD.ChannelGroup eventGroup);
+            if (eventGroup.hasHandle())
+            {
+                eventGroup.getNumChannels(out int numChannels);
+                for (int i = 0; i < numChannels; i++)
+                {
+                    eventGroup.getChannel(i, out FMOD.Channel channel);
+
+                    // Override its mode and explicit loop count dynamically!
+                    channel.setMode(isLooping ? FMOD.MODE.LOOP_NORMAL : FMOD.MODE.LOOP_OFF);
+                    channel.setLoopCount(isLooping ? -1 : 0);
+                }
+            }
+        }
     }
 
     void Update()
@@ -118,7 +131,6 @@ public class SFXNode : MonoBehaviour
 
     void OnDestroy()
     {
-        // Route destruction through our safe cleanup method to prevent leaks on node deletion
         ReleaseCurrentAudio();
     }
 }

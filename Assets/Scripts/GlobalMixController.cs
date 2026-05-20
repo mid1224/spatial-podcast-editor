@@ -30,7 +30,8 @@ public class GlobalMixController : MonoBehaviour
         playPauseButton.onClick.AddListener(TogglePlayPause);
 
         // Timeline dragging events
-        timelineSlider.onValueChanged.AddListener(OnTimelineScrubbed);
+        //timelineSlider.onValueChanged.AddListener(OnTimelineScrubbed);
+        timelineSlider.onValueChanged.AddListener(OnSliderScrubbed);
 
         // Vocal Volume
         vocalVolumeSlider.onValueChanged.AddListener(v => vocalNode.SetVolume(v));
@@ -41,6 +42,13 @@ public class GlobalMixController : MonoBehaviour
         reverbDropdown.onValueChanged.AddListener(OnReverbPresetChanged);
         reverbIntensitySlider.onValueChanged.AddListener(OnReverbIntensityChanged);
         vocalVolumeSlider.onValueChanged.AddListener(OnVocalVolumeChanged);
+
+        // Sync the UI with the initial FMOD parameter states on start
+        OnMasterVolumeChanged(masterVolumeSlider.value);
+        OnVocalVolumeChanged(vocalVolumeSlider.value);
+        OnDuckingChanged(duckingSlider.value);
+        OnReverbIntensityChanged(reverbIntensitySlider.value);
+        OnReverbPresetChanged(reverbDropdown.value);
     }
 
     void Update()
@@ -48,17 +56,18 @@ public class GlobalMixController : MonoBehaviour
         // 2. Automatically move the Timeline Slider as the audio plays
         if (isPlaying && vocalNode.isAudioLoaded && !isScrubbing)
         {
+            // Ask the raw channel for the exact millisecond
             vocalNode.vocalChannel.getPosition(out uint currentPositionMs, FMOD.TIMEUNIT.MS);
-
-            // Update slider value without triggering the onValueChanged event
             timelineSlider.SetValueWithoutNotify(currentPositionMs);
 
-            // Auto-stop at the end
+            // Auto-Rewind at the end of the song
             if (currentPositionMs >= vocalNode.totalLengthMs - 50)
             {
-                TogglePlayPause();
+                TogglePlayPause(); // Sets to Paused
                 timelineSlider.SetValueWithoutNotify(0);
-                vocalNode.vocalChannel.setPosition(0, FMOD.TIMEUNIT.MS);
+                vocalNode.RestartAudio();
+                vocalNode.isPlaying = false;
+                vocalNode.ApplySettings();
             }
         }
     }
@@ -76,21 +85,46 @@ public class GlobalMixController : MonoBehaviour
         timelineSlider.value = 0;
     }
 
-    private void TogglePlayPause()
+    public void TogglePlayPause()
     {
         if (!vocalNode.isAudioLoaded) return;
 
+        // 1. Flip the master playing state
         isPlaying = !isPlaying;
-        vocalNode.vocalChannel.setPaused(!isPlaying);
+
+        // 2. Tell the Vocal Node to update itself
+        vocalNode.isPlaying = isPlaying;
+        vocalNode.ApplySettings();
     }
 
     // Called when the user clicks and drags the timeline slider
-    private void OnTimelineScrubbed(float newPositionMs)
-    {
-        if (!vocalNode.isAudioLoaded) return;
+    //private void OnTimelineScrubbed(float newPositionMs)
+    //{
+    //    if (!vocalNode.isAudioLoaded) return;
 
-        // Tell FMOD to jump to the new timestamp
-        vocalNode.vocalChannel.setPosition((uint)newPositionMs, FMOD.TIMEUNIT.MS);
+    //    // Tell FMOD to jump to the new timestamp
+    //    vocalNode.vocalChannel.setPosition((uint)newPositionMs, FMOD.TIMEUNIT.MS);
+    //}
+
+    // 1. Called when your mouse CLICKS DOWN on the slider
+    public void OnScrubBegin()
+    {
+        isScrubbing = true;
+    }
+
+    // 2. Called when you DRAG the slider
+    public void OnSliderScrubbed(float value)
+    {
+        if (isScrubbing && vocalNode.isAudioLoaded)
+        {
+            vocalNode.ScrubTo((uint)value);
+        }
+    }
+
+    // 3. Called when your mouse LETS GO of the slider
+    public void OnScrubEnd()
+    {
+        isScrubbing = false;
     }
 
     // --- Global Mix FMOD Hooks ---

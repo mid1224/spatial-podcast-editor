@@ -3,15 +3,25 @@ using FMODUnity;
 
 public class VocalNode : MonoBehaviour
 {
-    private FMOD.Sound vocalSound;
+    // Defaulting to false so new nodes spawn silently
+    public bool isPlaying = false;
+    public float volume = 1.0f;
+    public bool isAudioLoaded = false;
+
+    // Kept public so the Timeline slider can still read them!
+    public uint totalLengthMs;
     public FMOD.Channel vocalChannel;
 
-    public uint totalLengthMs;
-    public bool isAudioLoaded = false;
-    private bool isPlaying = false; // Track play state internally
+    private FMOD.Sound vocalSound;
 
     public void LoadAudioFile(string absolutePath)
     {
+        // --- 1. CLEAN UP ORPHANED AUDIO ---
+        ReleaseCurrentAudio();
+
+        // --- 2. FORCE STOP STATE ---
+        isPlaying = false;
+
         FMOD.RESULT result = RuntimeManager.CoreSystem.createSound(
             absolutePath,
             FMOD.MODE._3D | FMOD.MODE.CREATESTREAM,
@@ -22,8 +32,10 @@ public class VocalNode : MonoBehaviour
         {
             vocalSound.getLength(out totalLengthMs, FMOD.TIMEUNIT.MS);
 
+            // Start paused so it doesn't overlap or play immediately
             RuntimeManager.CoreSystem.playSound(vocalSound, new FMOD.ChannelGroup(), true, out vocalChannel);
 
+            // Force routing sync into the Vocal Bus for ducking
             RuntimeManager.StudioSystem.flushCommands();
             FMOD.Studio.Bus vocalBus = RuntimeManager.GetBus("bus:/Vocal");
 
@@ -32,24 +44,60 @@ public class VocalNode : MonoBehaviour
                 vocalChannel.setChannelGroup(vocalGroup);
             }
 
+            // Standard 3D Spatialization
             vocalChannel.set3DMinMaxDistance(1f, 50f);
             vocalChannel.set3DLevel(1.0f);
+            vocalChannel.set3DSpread(0f); // Prevents stereo files from ignoring panning
 
             isAudioLoaded = true;
-            Update3DPosition(); // Set initial position
+            Update3DPosition();
+            ApplySettings();
+        }
+        else
+        {
+            Debug.LogError($"[Vocal Node] Failed to load: {result}");
         }
     }
 
-    // --- NEW TRACKING LOGIC ---
+    // --- NEW: DEDICATED CLEANUP METHOD ---
+    private void ReleaseCurrentAudio()
+    {
+        if (isAudioLoaded)
+        {
+            // Stop and wipe the channel
+            if (vocalChannel.hasHandle())
+            {
+                vocalChannel.stop();
+                vocalChannel.clearHandle();
+            }
+
+            // Shred the audio file from RAM
+            if (vocalSound.hasHandle())
+            {
+                vocalSound.release();
+                vocalSound.clearHandle();
+            }
+
+            isAudioLoaded = false;
+        }
+    }
+
+    public void ApplySettings()
+    {
+        if (!isAudioLoaded) return;
+
+        vocalChannel.setVolume(volume);
+        vocalChannel.setPaused(!isPlaying);
+    }
+
     void Update()
     {
         if (isAudioLoaded)
         {
-            // Check if FMOD is actively playing to sync our update loop
+            // Sync the internal bool with FMOD's actual play state
             vocalChannel.getPaused(out bool isPaused);
             isPlaying = !isPaused;
 
-            // Constantly update FMOD with the node's current Unity position
             Update3DPosition();
         }
     }
@@ -60,10 +108,19 @@ public class VocalNode : MonoBehaviour
         FMOD.VECTOR vel = RuntimeUtils.ToFMODVector(Vector3.zero);
         vocalChannel.set3DAttributes(ref pos, ref vel);
     }
-    // ---------------------------
 
-    public void SetVolume(float volume)
+    void OnDestroy()
     {
-        if (isAudioLoaded) vocalChannel.setVolume(volume);
+        // Safe cleanup if the node is deleted from the scene
+        ReleaseCurrentAudio();
+    }
+
+    public void SetVolume(float newVolume)
+    {
+        volume = newVolume;
+        if (isAudioLoaded)
+        {
+            vocalChannel.setVolume(volume);
+        }
     }
 }

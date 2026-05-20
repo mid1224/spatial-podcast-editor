@@ -40,18 +40,18 @@ public class SFXUIController : MonoBehaviour
         UpdateStatusText();
     }
 
-    // --- NEW LOADING METHOD ---
     private void OnLoadSfxClicked()
     {
         if (activeNode == null || string.IsNullOrEmpty(sfxPathInput.text)) return;
 
         string path = sfxPathInput.text;
-        path = path.Replace("\"", ""); // Clean up copied Windows file paths
+        path = path.Replace("\"", "");
 
-        // Call the previously unused method directly on the selected node!
         activeNode.LoadAudioFile(path);
+
+        // --- NEW: Refresh the UI text to match the newly stopped node ---
+        UpdateStatusText();
     }
-    // --------------------------
 
     private void OnPlayClicked()
     {

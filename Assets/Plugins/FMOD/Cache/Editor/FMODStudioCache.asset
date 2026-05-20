@@ -1,5 +1,32 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-8483651754093578337
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SteamAudio_SFX
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/SteamAudio_SFX
+  Guid:
+    Data1: -155057555
+    Data2: 1145051467
+    Data3: -211774536
+    Data4: 681568476
+  Banks:
+  - {fileID: -6751896929429797194}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 0
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 10000
 --- !u!114 &-7963745392129590607
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -39,10 +66,10 @@ MonoBehaviour:
   Path: FMOD/fmodproject/Build/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 639148227807480963
+  lastModified: 639148670570170223
   FileSizes:
   - Name: Desktop
-    Value: 992
+    Value: 1094
   Exists: 1
 --- !u!114 &-6751896929429797194
 MonoBehaviour:
@@ -59,10 +86,10 @@ MonoBehaviour:
   Path: FMOD/fmodproject/Build/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 639148227807467261
+  lastModified: 639148670570159376
   FileSizes:
   - Name: Desktop
-    Value: 4076
+    Value: 5362
   Exists: 1
 --- !u!114 &-6276150207904767111
 MonoBehaviour:
@@ -127,7 +154,8 @@ MonoBehaviour:
   EditorBanks:
   - {fileID: -7217687733956796268}
   - {fileID: -6751896929429797194}
-  EditorEvents: []
+  EditorEvents:
+  - {fileID: -8483651754093578337}
   EditorParameters:
   - {fileID: -2010716554049361910}
   - {fileID: 9171140363734601460}
@@ -138,7 +166,7 @@ MonoBehaviour:
   - {fileID: -6751896929429797194}
   StringsBanks:
   - {fileID: -7217687733956796268}
-  cacheTime: 639148227807480963
+  cacheTime: 639148670570170223
   cacheVersion: 131636
 --- !u!114 &2327813666446945097
 MonoBehaviour:

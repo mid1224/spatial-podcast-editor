@@ -24,6 +24,9 @@
 		<property name="nameOfPropertyBeingModulated">
 			<value>volume</value>
 		</property>
+		<property name="minimumThreshold">
+			<value>-50</value>
+		</property>
 		<relationship name="automators">
 			<destination>{69515a04-fab1-4187-8cb2-e7ef765f1513}</destination>
 		</relationship>
@@ -60,7 +63,7 @@
 			<value>1</value>
 		</property>
 		<property name="value">
-			<value>15</value>
+			<value>70</value>
 		</property>
 	</object>
 	<object class="AutomationPoint" id="{19a46ec0-b08f-4834-951c-2ad0bd1e0821}">

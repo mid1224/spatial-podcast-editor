@@ -6,6 +6,7 @@ public class AppManager : MonoBehaviour
     [Header("Spawning")]
     public GameObject sfxNodePrefab;
     public Transform spawnPoint;
+    public float maxSpawnRadius = 2.5f; // How far apart they spawn
 
     [Header("UI Reference")]
     public SFXUIController sharedUIController;
@@ -57,8 +58,20 @@ public class AppManager : MonoBehaviour
 
     public void SpawnNewSFXNode()
     {
-        GameObject newNode = Instantiate(sfxNodePrefab, spawnPoint.position, Quaternion.identity);
-        SelectNode(newNode.GetComponent<SFXNode>());
+        if (spawnPoint == null)
+        {
+            Debug.LogError("[AppManager] Spawn Point is missing! Please assign it in the Inspector.");
+            return;
+        }
+
+        // 1. Generate a random distance and random direction in one line
+        Vector2 randomScatter = Random.insideUnitCircle * maxSpawnRadius;
+
+        // 2. Apply the random scatter to the X and Z axes, anchored exactly to your spawnPoint
+        Vector3 finalSpawnPos = spawnPoint.position + new Vector3(randomScatter.x, 0f, randomScatter.y);
+
+        // 3. Instantiate the prefab
+        GameObject newNode = Instantiate(sfxNodePrefab, finalSpawnPos, Quaternion.identity);
     }
 
     private void SelectNode(SFXNode nodeToSelect)

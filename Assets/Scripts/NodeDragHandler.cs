@@ -23,12 +23,6 @@ public class NodeDragHandler : MonoBehaviour
         }
 
         fixedYPosition = transform.position.y; // Keep the node locked to its original floor height
-
-        // Optional fallback if not set in Inspector
-        if (dragCenter == Vector3.zero)
-        {
-            dragCenter = transform.position;
-        }
     }
 
     void Update()

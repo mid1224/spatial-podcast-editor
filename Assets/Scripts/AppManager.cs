@@ -21,6 +21,8 @@ public class AppManager : MonoBehaviour
     {
         if (mainCam == null) mainCam = Camera.main;
 
+        FMODUnity.RuntimeManager.CoreSystem.set3DSettings(1.0f, 1.0f, 1.0f);
+
         FMOD.Studio.Bus vocalBus = FMODUnity.RuntimeManager.GetBus("bus:/Vocal");
         vocalBus.lockChannelGroup();
 

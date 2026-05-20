@@ -16,6 +16,9 @@ public class VocalNode : MonoBehaviour
     public bool isSelected = false;
     public TMP_Text nameLabelUnderIcon;
 
+    // Optional text label for displaying distance
+    public TMP_Text distanceLabelUnderName;
+
     public void LoadAudioFile(string absolutePath)
     {
         ReleaseCurrentAudio();
@@ -44,6 +47,7 @@ public class VocalNode : MonoBehaviour
             isAudioLoaded = true;
             Update3DPosition();
             ApplySettings();
+            UpdateDistanceLabel();
         }
     }
 
@@ -105,6 +109,8 @@ public class VocalNode : MonoBehaviour
             isPlaying = !isPaused;
             Update3DPosition();
         }
+
+        UpdateDistanceLabel();
     }
 
     private void Update3DPosition()
@@ -112,6 +118,15 @@ public class VocalNode : MonoBehaviour
         FMOD.VECTOR pos = RuntimeUtils.ToFMODVector(transform.position);
         FMOD.VECTOR vel = RuntimeUtils.ToFMODVector(Vector3.zero);
         vocalChannel.set3DAttributes(ref pos, ref vel);
+    }
+
+    private void UpdateDistanceLabel()
+    {
+        if (distanceLabelUnderName != null)
+        {
+            float distance = Vector3.Distance(transform.position, Vector3.zero);
+            distanceLabelUnderName.text = $"{distance:F2}m";
+        }
     }
 
     void OnDestroy() { ReleaseCurrentAudio(); }

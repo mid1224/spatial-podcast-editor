@@ -33,6 +33,9 @@ public class SFXNode : MonoBehaviour
     // Optional text label under the icon (assign a TextMeshPro text in the inspector)
     public TMP_Text nameLabelUnderIcon;
 
+    // Optional text label for displaying distance
+    public TMP_Text distanceLabelUnderName;
+
     public void LoadAudioFile(string absolutePath)
     {
         audioPath = absolutePath ?? string.Empty;
@@ -68,6 +71,7 @@ public class SFXNode : MonoBehaviour
 
         ApplyIconColor(iconColor);
         UpdateNameLabel();
+        UpdateDistanceLabel();
     }
 
     private void ReleaseCurrentAudio()
@@ -140,11 +144,22 @@ public class SFXNode : MonoBehaviour
         {
             Update3DPosition();
         }
+
+        UpdateDistanceLabel();
     }
 
     private void Update3DPosition()
     {
         steamAudioEvent.set3DAttributes(RuntimeUtils.To3DAttributes(transform));
+    }
+
+    private void UpdateDistanceLabel()
+    {
+        if (distanceLabelUnderName != null)
+        {
+            float distance = Vector3.Distance(transform.position, Vector3.zero);
+            distanceLabelUnderName.text = $"{distance:F2}m";
+        }
     }
 
     public void SetIcon(bool isPlaying)

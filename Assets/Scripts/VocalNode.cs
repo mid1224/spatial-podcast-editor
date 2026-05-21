@@ -21,6 +21,8 @@ public class VocalNode : MonoBehaviour
     public float volume = 1.0f;
     public bool isAudioLoaded = false;
 
+    public string audioPath = string.Empty;
+
     // --- Spatial Settings ---
     public float minDistance = 1f;
     public float maxDistance = 50f;
@@ -70,6 +72,8 @@ public class VocalNode : MonoBehaviour
 
     public void LoadAudioFile(string absolutePath)
     {
+        audioPath = absolutePath ?? string.Empty;
+
         ReleaseCurrentAudio();
         isPlaying = false;
 
@@ -177,7 +181,7 @@ public class VocalNode : MonoBehaviour
         float currentTime = 0f;
 
         if (globalMixController == null)
-            globalMixController = FindObjectOfType<GlobalMixController>();
+            globalMixController = FindFirstObjectByType<GlobalMixController>();
 
         if (globalMixController != null && globalMixController.timelineSlider != null)
         {

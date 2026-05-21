@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using SimpleFileBrowser;
 
 [RequireComponent(typeof(Camera))]
 public class CameraController : MonoBehaviour
@@ -83,6 +84,11 @@ public class CameraController : MonoBehaviour
 
     void Update()
     {
+        if (FileBrowser.IsOpen)
+        {
+            return;
+        }
+
         if (Input.GetKeyDown(toggleModeHotkey))
         {
             ToggleMode();

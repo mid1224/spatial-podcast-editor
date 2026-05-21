@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.IO;
+using SimpleFileBrowser;
 
 public class GlobalMixController : MonoBehaviour
 {
@@ -8,11 +10,12 @@ public class GlobalMixController : MonoBehaviour
     public VocalNode vocalNode;
 
     [Header("Vocal & Timeline UI")]
-    public TMP_InputField filePathInput;
+    public TMP_Text vocalPathText;
     public Button loadAudioButton;
     public Button playPauseButton;
     public Button recordButton; // 1. Added Record Button
     public Slider timelineSlider;
+    public TMP_Text timelineText;
     public Slider vocalVolumeSlider;
 
     [Header("Height Control")]
@@ -76,6 +79,9 @@ public class GlobalMixController : MonoBehaviour
         OnDuckingChanged(duckingSlider.value);
         OnReverbIntensityChanged(reverbIntensitySlider.value);
         OnReverbPresetChanged(reverbDropdown.value);
+
+        vocalPathText.text = "No File Loaded";
+        UpdateTimelineText(0, 0);
     }
 
     void Update()
@@ -86,6 +92,9 @@ public class GlobalMixController : MonoBehaviour
             // Ask the raw channel for the exact millisecond
             vocalNode.vocalChannel.getPosition(out uint currentPositionMs, FMOD.TIMEUNIT.MS);
             timelineSlider.SetValueWithoutNotify(currentPositionMs);
+
+            // NEW: Update the text display during playback
+            UpdateTimelineText(currentPositionMs, vocalNode.totalLengthMs);
 
             // Auto-Rewind at the end of the song
             if (currentPositionMs >= vocalNode.totalLengthMs - 50)
@@ -108,15 +117,40 @@ public class GlobalMixController : MonoBehaviour
 
     private void OnLoadAudioClicked()
     {
-        string path = filePathInput.text;
-        // Strip quotes if user copied path directly from Windows
-        path = path.Replace("\"", "");
+        if (vocalNode == null) return;
 
-        vocalNode.LoadAudioFile(path);
+        FileBrowser.SetFilters(true, new FileBrowser.Filter("Audio Files", ".wav", ".mp3", ".ogg", ".aiff"));
+        FileBrowser.SetDefaultFilter(".wav");
 
-        // Set up the timeline slider matching the track length
-        timelineSlider.maxValue = vocalNode.totalLengthMs;
-        timelineSlider.value = 0;
+        FileBrowser.ShowLoadDialog(
+            (paths) =>
+            {
+                if (paths != null && paths.Length > 0)
+                {
+                    string path = paths[0];
+                    vocalNode.LoadAudioFile(path);
+
+                    // Set up the timeline slider matching the track length
+                    timelineSlider.maxValue = vocalNode.totalLengthMs;
+                    timelineSlider.value = 0;
+
+                    // Initialize the text display
+                    UpdateTimelineText(0, vocalNode.totalLengthMs);
+
+                    // Visually update the text mesh to show only the loaded filename
+                    if (vocalPathText != null)
+                    {
+                        vocalPathText.text = string.IsNullOrEmpty(vocalNode.audioPath) ? "No File Loaded" : Path.GetFileName(vocalNode.audioPath);
+                    }
+                }
+            },
+            () => { /* Load Canceled */ },
+            FileBrowser.PickMode.Files,
+            false,
+            null,
+            "Select Vocal Audio File",
+            "Load"
+        );
     }
 
     public void TogglePlayPause()
@@ -143,6 +177,7 @@ public class GlobalMixController : MonoBehaviour
         if (isScrubbing && vocalNode.isAudioLoaded)
         {
             vocalNode.ScrubTo((uint)value);
+            UpdateTimelineText(value, vocalNode.totalLengthMs);
         }
     }
 
@@ -159,6 +194,27 @@ public class GlobalMixController : MonoBehaviour
         Vector3 newPos = vocalNode.transform.position;
         newPos.y = height;
         vocalNode.transform.position = newPos;
+    }
+
+    private void UpdateTimelineText(float currentMs, float totalMs)
+    {
+        if (timelineText != null)
+        {
+            string currentTimeString = FormatTimeMs(currentMs);
+            string totalTimeString = FormatTimeMs(totalMs);
+            timelineText.text = $"{currentTimeString}/{totalTimeString}";
+        }
+    }
+
+    private string FormatTimeMs(float timeMs)
+    {
+        // Convert milliseconds to total seconds
+        int totalSeconds = Mathf.FloorToInt(timeMs / 1000f);
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
+
+        // Format as MM:SS
+        return string.Format("{0:00}:{1:00}", minutes, seconds);
     }
 
     // --- Global Mix FMOD Hooks ---

@@ -2,6 +2,7 @@ using System.IO;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using SimpleFileBrowser; // Ensure this is added
 
 public class SFXUIController : MonoBehaviour
 {
@@ -28,7 +29,7 @@ public class SFXUIController : MonoBehaviour
     public TMP_InputField nameInput; // editable name field in settings (also displays the current name)
 
     [Header("Audio Loading")]
-    public TMP_InputField sfxPathInput;
+    public TMP_Text sfxPathText; // Changed to TMP_Text to just display the name
     public Button loadSfxButton;
 
     private SFXNode activeNode;
@@ -93,10 +94,10 @@ public class SFXUIController : MonoBehaviour
         activeNode = node;
         gameObject.SetActive(true);
 
-        // Show saved audio filename (trimmed from absolute path) in the path input (if any)
-        if (sfxPathInput != null)
+        // Show saved audio filename (trimmed from absolute path) in the UI Text
+        if (sfxPathText != null)
         {
-            sfxPathInput.SetTextWithoutNotify(string.IsNullOrEmpty(activeNode.audioPath) ? "" : Path.GetFileName(activeNode.audioPath));
+            sfxPathText.text = string.IsNullOrEmpty(activeNode.audioPath) ? "No File Loaded" : Path.GetFileName(activeNode.audioPath);
         }
 
         loopToggle.SetIsOnWithoutNotify(activeNode.isLooping);
@@ -132,21 +133,36 @@ public class SFXUIController : MonoBehaviour
 
     private void OnLoadSfxClicked()
     {
-        if (activeNode == null || string.IsNullOrEmpty(sfxPathInput.text)) return;
+        if (activeNode == null) return;
 
-        string path = sfxPathInput.text;
-        path = path.Replace("\"", "");
+        FileBrowser.SetFilters(true, new FileBrowser.Filter("Audio Files", ".wav", ".mp3", ".ogg", ".aiff"));
+        FileBrowser.SetDefaultFilter(".wav");
 
-        activeNode.LoadAudioFile(path);
+        FileBrowser.ShowLoadDialog(
+            (paths) =>
+            {
+                if (paths != null && paths.Length > 0)
+                {
+                    string path = paths[0];
+                    activeNode.LoadAudioFile(path);
 
-        // Update the displayed path to show only the filename
-        if (sfxPathInput != null)
-        {
-            sfxPathInput.SetTextWithoutNotify(string.IsNullOrEmpty(activeNode.audioPath) ? "" : Path.GetFileName(activeNode.audioPath));
-        }
+                    // Update the displayed path to show only the filename
+                    if (sfxPathText != null)
+                    {
+                        sfxPathText.text = string.IsNullOrEmpty(activeNode.audioPath) ? "No File Loaded" : Path.GetFileName(activeNode.audioPath);
+                    }
 
-        // --- NEW: Refresh the UI text to match the newly stopped node ---
-        UpdateStatusText();
+                    // Refresh the UI text to match the newly stopped node
+                    UpdateStatusText();
+                }
+            },
+            () => { /* Load Canceled */ },
+            FileBrowser.PickMode.Files,
+            false,
+            null,
+            "Select Audio File",
+            "Load"
+        );
     }
 
     private void OnPlayClicked()

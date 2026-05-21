@@ -180,7 +180,7 @@ public class SFXNode : MonoBehaviour
         float currentTime = 0f;
         
         if (globalMixController == null)
-            globalMixController = FindObjectOfType<GlobalMixController>();
+            globalMixController = FindFirstObjectByType<GlobalMixController>();
 
         if (globalMixController != null && globalMixController.timelineSlider != null)
         {
@@ -302,7 +302,7 @@ public class SFXNode : MonoBehaviour
         {
             if (globalMixController == null)
             {
-                globalMixController = FindObjectOfType<GlobalMixController>();
+                globalMixController = FindFirstObjectByType<GlobalMixController>();
             }
 
             if (globalMixController != null && globalMixController.timelineSlider != null)

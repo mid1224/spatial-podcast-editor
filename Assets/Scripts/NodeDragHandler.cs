@@ -10,8 +10,8 @@ public class NodeDragHandler : MonoBehaviour
 
     private Camera mainCam;
     private CameraController cameraController;
-    private bool isDragging = false;
-    private float fixedYPosition;
+    public bool isDragging = false; // Changed to public so nodes can read it
+    private float fixedYPosition;   
 
     void Start()
     {

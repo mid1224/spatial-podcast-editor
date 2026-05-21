@@ -125,7 +125,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56f1bd411cfab8543b5cc96a210037eb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NodeDragHandler
-  maxDragRadius: 20
+  maxDragRadius: 100
   dragCenter: {x: 0, y: 0, z: 0}
 --- !u!1 &3564025064213447013
 GameObject:

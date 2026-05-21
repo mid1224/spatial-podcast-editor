@@ -8,6 +8,7 @@ public class SFXUIController : MonoBehaviour
     [Header("UI Controls")]
     public Button playButton;
     public Button stopButton;
+    public Button recordButton; // Added Record Button
     public Toggle loopToggle;
     public Slider volumeSlider;
     public TextMeshProUGUI statusText;
@@ -17,6 +18,11 @@ public class SFXUIController : MonoBehaviour
     public Slider redSlider;
     public Slider greenSlider;
     public Slider blueSlider;
+
+    [Header("Height Control")]
+    public Slider heightSlider;
+    public float heightMin = -10f;
+    public float heightMax = 10f;
 
     [Header("Name / Settings UI")]
     public TMP_InputField nameInput; // editable name field in settings (also displays the current name)
@@ -31,6 +37,12 @@ public class SFXUIController : MonoBehaviour
     {
         playButton.onClick.AddListener(OnPlayClicked);
         stopButton.onClick.AddListener(OnStopClicked);
+        
+        if (recordButton != null)
+        {
+            recordButton.onClick.AddListener(OnRecordClicked);
+        }
+        
         loopToggle.onValueChanged.AddListener(OnLoopChanged);
         volumeSlider.onValueChanged.AddListener(OnVolumeChanged);
         loadSfxButton.onClick.AddListener(OnLoadSfxClicked);
@@ -57,6 +69,14 @@ public class SFXUIController : MonoBehaviour
             blueSlider.maxValue = 255f;
             blueSlider.wholeNumbers = true;
             blueSlider.onValueChanged.AddListener(OnColorSliderChanged);
+        }
+
+        // Configure height slider
+        if (heightSlider != null)
+        {
+            heightSlider.minValue = heightMin;
+            heightSlider.maxValue = heightMax;
+            heightSlider.onValueChanged.AddListener(OnHeightChanged);
         }
 
         // Name input listener
@@ -93,6 +113,12 @@ public class SFXUIController : MonoBehaviour
             redSlider.SetValueWithoutNotify(Mathf.Round(r * 255f));
             greenSlider.SetValueWithoutNotify(Mathf.Round(g * 255f));
             blueSlider.SetValueWithoutNotify(Mathf.Round(b * 255f));
+        }
+
+        // Initialize height slider from node
+        if (heightSlider != null)
+        {
+            heightSlider.SetValueWithoutNotify(activeNode.transform.position.y);
         }
 
         // Show current name in the input field content
@@ -141,6 +167,14 @@ public class SFXUIController : MonoBehaviour
         UpdateStatusText();
     }
 
+    private void OnRecordClicked()
+    {
+        if (activeNode == null) return;
+        
+        // This hooks into your newly added method on the SFXNode
+        activeNode.RecordCurrentState();
+    }
+
     private void OnLoopChanged(bool isLooping)
     {
         if (activeNode == null) return;
@@ -166,6 +200,15 @@ public class SFXUIController : MonoBehaviour
         // Convert 0..255 -> 0..1 for Color
         var c = new Color(r / 255f, g / 255f, b / 255f, 1f);
         activeNode.SetIconColor(c);
+    }
+
+    private void OnHeightChanged(float height)
+    {
+        if (activeNode == null) return;
+
+        Vector3 position = activeNode.transform.position;
+        position.y = height;
+        activeNode.transform.position = position;
     }
 
     private void OnNameInputEndEdit(string newName)

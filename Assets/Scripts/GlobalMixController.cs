@@ -11,8 +11,14 @@ public class GlobalMixController : MonoBehaviour
     public TMP_InputField filePathInput;
     public Button loadAudioButton;
     public Button playPauseButton;
+    public Button recordButton; // 1. Added Record Button
     public Slider timelineSlider;
     public Slider vocalVolumeSlider;
+
+    [Header("Height Control")]
+    public Slider heightSlider;
+    public float heightMin = -10f;
+    public float heightMax = 10f;
 
     [Header("Global Mix UI")]
     public Slider masterVolumeSlider;
@@ -20,21 +26,42 @@ public class GlobalMixController : MonoBehaviour
     public TMP_Dropdown reverbDropdown;
     public Slider reverbIntensitySlider;
 
+    // We can explicitly check this out in the VocalNode
+    public bool IsScrubbing => isScrubbing;
+
     private bool isPlaying = false;
-    private bool isScrubbing = false; // Prevents the slider from fighting the user when dragged
+    public bool isScrubbing = false; // Prevents the slider from fighting the user when dragged
 
     void Start()
     {
         // 1. Link UI Events
         loadAudioButton.onClick.AddListener(OnLoadAudioClicked);
         playPauseButton.onClick.AddListener(TogglePlayPause);
+        
+        // Setup Record Button
+        if (recordButton != null)
+        {
+            recordButton.onClick.AddListener(OnRecordClicked);
+        }
 
         // Timeline dragging events
-        //timelineSlider.onValueChanged.AddListener(OnTimelineScrubbed);
         timelineSlider.onValueChanged.AddListener(OnSliderScrubbed);
 
         // Vocal Volume
         vocalVolumeSlider.onValueChanged.AddListener(v => vocalNode.SetVolume(v));
+
+        // Safely Initialize Height Slider
+        if (heightSlider != null && vocalNode != null)
+        {
+            heightSlider.minValue = heightMin;
+            heightSlider.maxValue = heightMax;
+            
+            // Set the value silently first to prevent accidental teleportation
+            heightSlider.SetValueWithoutNotify(vocalNode.transform.position.y);
+            
+            // Only add the listener AFTER everything matches
+            heightSlider.onValueChanged.AddListener(OnHeightChanged);
+        }
 
         // Global Mix Events (We will hook these to FMOD/Steam Audio later)
         masterVolumeSlider.onValueChanged.AddListener(OnMasterVolumeChanged);
@@ -72,6 +99,13 @@ public class GlobalMixController : MonoBehaviour
         }
     }
 
+    private void OnRecordClicked()
+    {
+        if (vocalNode == null) return;
+        
+        vocalNode.RecordCurrentState();
+    }
+
     private void OnLoadAudioClicked()
     {
         string path = filePathInput.text;
@@ -97,15 +131,6 @@ public class GlobalMixController : MonoBehaviour
         vocalNode.ApplySettings();
     }
 
-    // Called when the user clicks and drags the timeline slider
-    //private void OnTimelineScrubbed(float newPositionMs)
-    //{
-    //    if (!vocalNode.isAudioLoaded) return;
-
-    //    // Tell FMOD to jump to the new timestamp
-    //    vocalNode.vocalChannel.setPosition((uint)newPositionMs, FMOD.TIMEUNIT.MS);
-    //}
-
     // 1. Called when your mouse CLICKS DOWN on the slider
     public void OnScrubBegin()
     {
@@ -125,6 +150,15 @@ public class GlobalMixController : MonoBehaviour
     public void OnScrubEnd()
     {
         isScrubbing = false;
+    }
+
+    private void OnHeightChanged(float height)
+    {
+        if (vocalNode == null) return;
+        
+        Vector3 newPos = vocalNode.transform.position;
+        newPos.y = height;
+        vocalNode.transform.position = newPos;
     }
 
     // --- Global Mix FMOD Hooks ---

@@ -3,6 +3,17 @@ using FMODUnity;
 using System;
 using System.Runtime.InteropServices;
 using TMPro;
+using System.Collections.Generic;
+
+[Serializable]
+public class SFXNodeState
+{
+    public float timeMs;
+    public Vector3 position;
+    public float volume;
+    public bool isLooping;
+    public bool isPlaying;
+}
 
 public class SFXNode : MonoBehaviour
 {
@@ -35,6 +46,14 @@ public class SFXNode : MonoBehaviour
 
     // Optional text label for displaying distance
     public TMP_Text distanceLabelUnderName;
+
+    [Header("Timeline Recording")]
+    public List<SFXNodeState> recordedStates = new List<SFXNodeState>();
+    public bool enableTimelinePlayback = true;
+    private GlobalMixController globalMixController;
+
+    // ADDED: Track the last time we updated to prevent timeline-locking while dragging
+    private float lastEvaluatedTime = -1f;
 
     public void LoadAudioFile(string absolutePath)
     {
@@ -138,8 +157,160 @@ public class SFXNode : MonoBehaviour
         }
     }
 
+    public void RestartAudio()
+    {
+        if (!isAudioLoaded) return;
+
+        // Reset playback position to the beginning
+        steamAudioEvent.getChannelGroup(out FMOD.ChannelGroup eventGroup);
+        if (eventGroup.hasHandle())
+        {
+            eventGroup.getNumChannels(out int numChannels);
+            for (int i = 0; i < numChannels; i++)
+            {
+                eventGroup.getChannel(i, out FMOD.Channel channel);
+                channel.setPosition(0, FMOD.TIMEUNIT.MS);
+            }
+        }
+    }
+
+    // --- Timeline Recording Methods --- //
+    public void RecordCurrentState()
+    {
+        float currentTime = 0f;
+        
+        if (globalMixController == null)
+            globalMixController = FindObjectOfType<GlobalMixController>();
+
+        if (globalMixController != null && globalMixController.timelineSlider != null)
+        {
+            currentTime = globalMixController.timelineSlider.value;
+        }
+
+        RecordState(currentTime);
+    }
+
+    public void RecordState(float timeMs)
+    {
+        SFXNodeState newState = new SFXNodeState
+        {
+            timeMs = timeMs,
+            position = transform.position,
+            volume = volume,
+            isLooping = isLooping,
+            isPlaying = isPlaying
+        };
+
+        // If a keyframe already exists around this time, replace it
+        int existingIndex = recordedStates.FindIndex(s => Mathf.Approximately(s.timeMs, timeMs));
+        if (existingIndex >= 0)
+        {
+            recordedStates[existingIndex] = newState;
+        }
+        else
+        {
+            recordedStates.Add(newState);
+            recordedStates.Sort((a, b) => a.timeMs.CompareTo(b.timeMs));
+        }
+
+        // ADDED: Force the cached time to update so it knows we overwrote the state
+        lastEvaluatedTime = timeMs;
+        
+        Debug.Log($"[SFX Node] Recorded settings & position at timeline {timeMs}ms for {nodeName}");
+    }
+
+    public void EvaluateTimeline(float currentTime)
+    {
+        if (recordedStates.Count == 0) return;
+
+        // ONLY evaluate if the timeline has actually moved.
+        // This allows the user to freely drag the node around while the timeline is paused!
+        if (Mathf.Approximately(currentTime, lastEvaluatedTime)) return;
+        lastEvaluatedTime = currentTime;
+
+        // Snap to first state if playback is before the first recorded state
+        if (currentTime <= recordedStates[0].timeMs)
+        {
+            ApplyStateSnap(recordedStates[0]);
+            return;
+        }
+
+        // Snap to last state if playback exceeded final record
+        if (currentTime >= recordedStates[recordedStates.Count - 1].timeMs)
+        {
+            ApplyStateSnap(recordedStates[recordedStates.Count - 1]);
+            return;
+        }
+
+        // Find current timeline segment
+        for (int i = 0; i < recordedStates.Count - 1; i++)
+        {
+            SFXNodeState current = recordedStates[i];
+            SFXNodeState next = recordedStates[i + 1];
+
+            if (currentTime >= current.timeMs && currentTime <= next.timeMs)
+            {
+                // Smoothly interpolate position
+                float t = (currentTime - current.timeMs) / (next.timeMs - current.timeMs);
+                transform.position = Vector3.Lerp(current.position, next.position, t);
+
+                // Snap configuration settings to current timeframe key
+                SnapSettings(current);
+                return;
+            }
+        }
+    }
+
+    private void ApplyStateSnap(SFXNodeState state)
+    {
+        transform.position = state.position;
+        SnapSettings(state);
+    }
+
+    private void SnapSettings(SFXNodeState state)
+    {
+        bool changed = false;
+
+        if (!Mathf.Approximately(volume, state.volume))
+        {
+            volume = state.volume;
+            changed = true;
+        }
+
+        if (isLooping != state.isLooping)
+        {
+            isLooping = state.isLooping;
+            changed = true;
+        }
+
+        if (isPlaying != state.isPlaying)
+        {
+            isPlaying = state.isPlaying;
+            SetIcon(isPlaying);
+            changed = true;
+        }
+
+        if (changed)
+        {
+            ApplySettings();
+        }
+    }
+
     void Update()
     {
+        if (enableTimelinePlayback)
+        {
+            if (globalMixController == null)
+            {
+                globalMixController = FindObjectOfType<GlobalMixController>();
+            }
+
+            if (globalMixController != null && globalMixController.timelineSlider != null)
+            {
+                EvaluateTimeline(globalMixController.timelineSlider.value);
+            }
+        }
+
         if (isPlaying && isAudioLoaded)
         {
             Update3DPosition();
@@ -158,7 +329,15 @@ public class SFXNode : MonoBehaviour
         if (distanceLabelUnderName != null)
         {
             float distance = Vector3.Distance(transform.position, Vector3.zero);
-            distanceLabelUnderName.text = $"{distance:F2}m";
+            float height = transform.position.y;
+            
+            string label = $"{distance:F2}m";
+            if (!Mathf.Approximately(height, 0f))
+            {
+                label += $" [h: {height:F2}m]";
+            }
+            
+            distanceLabelUnderName.text = label;
         }
     }
 

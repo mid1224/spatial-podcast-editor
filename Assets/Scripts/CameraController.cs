@@ -29,6 +29,8 @@ public class CameraController : MonoBehaviour
     public float maxZoom = 25f;
 
     [Header("Flycam 3D Settings")]
+    public GameObject scene3D;
+    public GameObject listenerDirectionHelper;
     public float flyMoveSpeed = 10f;
     public float flySprintMultiplier = 2.5f;
     public float flyLookSensitivity = 2f;
@@ -114,23 +116,10 @@ public class CameraController : MonoBehaviour
         }
     }
 
-    public void SetTopDownMode()
-    {
-        currentMode = CameraMode.TopDown2D;
-        ApplyModeSettings(currentMode);
-        UpdateToggleModeButtonText();
-    }
-
-    public void SetFlycamMode()
-    {
-        currentMode = CameraMode.Fly3D;
-        ApplyModeSettings(currentMode);
-        UpdateToggleModeButtonText();
-    }
-
     public void ToggleMode()
     {
         currentMode = currentMode == CameraMode.TopDown2D ? CameraMode.Fly3D : CameraMode.TopDown2D;
+
         ApplyModeSettings(currentMode);
         ResetCamera();
         UpdateToggleModeButtonText();
@@ -156,12 +145,18 @@ public class CameraController : MonoBehaviour
         {
             cam.orthographic = true;
             ApplyTopDownFixedRotation();
+
+            scene3D.SetActive(false);
+            listenerDirectionHelper.SetActive(true);
         }
         else
         {
             cam.orthographic = false;
             pitch = transform.eulerAngles.x;
             if (pitch > 180f) pitch -= 360f;
+
+            scene3D.SetActive(true);
+            listenerDirectionHelper.SetActive(false);
         }
     }
 

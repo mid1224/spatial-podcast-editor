@@ -1,5 +1,5 @@
 using UnityEngine;
-using UnityEngine.InputSystem; // 1. Require the New Input System namespace
+using UnityEngine.InputSystem;
 
 public class AppManager : MonoBehaviour
 {
@@ -12,7 +12,7 @@ public class AppManager : MonoBehaviour
     public SFXUIController sharedUIController;
 
     [Header("Camera Reference")]
-    public Camera mainCam; // 2. Drag your camera here in the Inspector
+    public Camera mainCam;
 
     private SFXNode currentlySelectedSfxNode;
     private VocalNode currentlySelectedVocalNode;
@@ -110,7 +110,7 @@ public class AppManager : MonoBehaviour
         currentlySelectedVocalNode = nodeToSelect;
         currentlySelectedVocalNode.SetSelected(true);
 
-        // Optional: hide SFX UI when vocal node is selected
+        // Hide SFX UI when vocal node is selected
         if (sharedUIController != null)
         {
             sharedUIController.gameObject.SetActive(false);

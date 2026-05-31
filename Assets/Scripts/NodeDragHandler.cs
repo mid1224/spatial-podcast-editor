@@ -29,13 +29,6 @@ public class NodeDragHandler : MonoBehaviour
     {
         if (Mouse.current == null || mainCam == null) return;
 
-        // Disable dragging in Fly3D mode
-        if (cameraController != null && cameraController.currentMode == CameraController.CameraMode.Fly3D)
-        {
-            isDragging = false;
-            return;
-        }
-
         // 1. Detect Click Start
         if (Mouse.current.leftButton.wasPressedThisFrame)
         {
@@ -56,30 +49,31 @@ public class NodeDragHandler : MonoBehaviour
         if (isDragging && Mouse.current.leftButton.isPressed)
         {
             Vector2 mousePos = Mouse.current.position.ReadValue();
+            Ray ray = mainCam.ScreenPointToRay(mousePos);
+            Plane floorPlane = new Plane(Vector3.up, new Vector3(0, fixedYPosition, 0));
 
-            // Calculate distance from orthographic camera plane to the floor
-            float distanceToPlane = mainCam.transform.position.y - fixedYPosition;
-            Vector3 screenPos = new Vector3(mousePos.x, mousePos.y, distanceToPlane);
-
-            Vector3 worldPos = mainCam.ScreenToWorldPoint(screenPos);
-            Vector3 targetPos = new Vector3(worldPos.x, fixedYPosition, worldPos.z);
-
-            // Clamp to max drag radius (XZ plane)
-            if (maxDragRadius > 0f)
+            if (floorPlane.Raycast(ray, out float distance))
             {
-                Vector3 offset = targetPos - dragCenter;
-                offset.y = 0f;
+                Vector3 worldPos = ray.GetPoint(distance);
+                Vector3 targetPos = new Vector3(worldPos.x, fixedYPosition, worldPos.z);
 
-                if (offset.magnitude > maxDragRadius)
+                // Clamp to max drag radius (XZ plane)
+                if (maxDragRadius > 0f)
                 {
-                    offset = offset.normalized * maxDragRadius;
+                    Vector3 offset = targetPos - dragCenter;
+                    offset.y = 0f;
+
+                    if (offset.magnitude > maxDragRadius)
+                    {
+                        offset = offset.normalized * maxDragRadius;
+                    }
+
+                    targetPos = dragCenter + offset;
+                    targetPos.y = fixedYPosition;
                 }
 
-                targetPos = dragCenter + offset;
-                targetPos.y = fixedYPosition;
+                transform.position = targetPos;
             }
-
-            transform.position = targetPos;
         }
 
         // 3. Detect Click Release

@@ -91,6 +91,14 @@ public class CameraController : MonoBehaviour
             return;
         }
 
+        if (UnityEngine.EventSystems.EventSystem.current != null && 
+            UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject != null &&
+            (UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject.GetComponent<TMP_InputField>() != null ||
+             UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject.GetComponent<InputField>() != null))
+        {
+            return;
+        }
+
         if (Input.GetKeyDown(toggleModeHotkey))
         {
             ToggleMode();

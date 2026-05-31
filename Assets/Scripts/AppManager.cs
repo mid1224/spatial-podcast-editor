@@ -28,6 +28,22 @@ public class AppManager : MonoBehaviour
 
         FMOD.Studio.Bus sfxBus = FMODUnity.RuntimeManager.GetBus("bus:/SFX");
         sfxBus.lockChannelGroup();
+
+        // Ensure the Listener can be dragged
+        FMODUnity.StudioListener listener = FindFirstObjectByType<FMODUnity.StudioListener>();
+        if (listener != null)
+        {
+            if (listener.GetComponent<Collider>() == null)
+            {
+                SphereCollider col = listener.gameObject.AddComponent<SphereCollider>();
+                col.radius = 0.5f;
+            }
+            if (listener.GetComponent<NodeDragHandler>() == null)
+            {
+                NodeDragHandler handler = listener.gameObject.AddComponent<NodeDragHandler>();
+                handler.maxDragRadius = 100f;
+            }
+        }
     }
 
     void Update()

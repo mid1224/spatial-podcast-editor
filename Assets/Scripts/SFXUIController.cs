@@ -168,18 +168,14 @@ public class SFXUIController : MonoBehaviour
     private void OnPlayClicked()
     {
         if (activeNode == null) return;
-        activeNode.isPlaying = true;
-        activeNode.SetIcon(true);
-        activeNode.ApplySettings(); // Refreshes FMOD state
+        activeNode.PlayReload();
         UpdateStatusText();
     }
 
     private void OnStopClicked()
     {
         if (activeNode == null) return;
-        activeNode.isPlaying = false;
-        activeNode.SetIcon(false);
-        activeNode.ApplySettings(); // Refreshes FMOD state
+        activeNode.StopAndUnload();
         UpdateStatusText();
     }
 

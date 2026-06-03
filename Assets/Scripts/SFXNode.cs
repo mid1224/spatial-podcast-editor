@@ -286,8 +286,17 @@ public class SFXNode : MonoBehaviour
         if (isPlaying != state.isPlaying)
         {
             isPlaying = state.isPlaying;
-            SetIcon(isPlaying);
-            changed = true;
+
+            if (isPlaying)
+            {
+                PlayReload();
+            }
+            else
+            {
+                StopAndUnload();
+            }
+
+            return;
         }
 
         if (changed)
@@ -419,6 +428,25 @@ public class SFXNode : MonoBehaviour
     {
         SetIconColor(color);
         SetIcon(playing);
+    }
+
+    public void PlayReload()
+    {
+        if (string.IsNullOrEmpty(audioPath)) return;
+
+        ReleaseCurrentAudio();
+        LoadAudioFile(audioPath);
+
+        isPlaying = true;
+        SetIcon(true);
+        ApplySettings();
+    }
+
+    public void StopAndUnload()
+    {
+        isPlaying = false;
+        SetIcon(false);
+        ReleaseCurrentAudio();
     }
 
     void OnDestroy()

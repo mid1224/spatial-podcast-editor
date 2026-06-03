@@ -163,6 +163,21 @@ public class GlobalMixController : MonoBehaviour
         // 2. Tell the Vocal Node to update itself
         vocalNode.isPlaying = isPlaying;
         vocalNode.ApplySettings();
+
+        if (!isPlaying)
+        {
+            StopAllSfxNodes();
+        }
+    }
+
+    private void StopAllSfxNodes()
+    {
+        var sfxNodes = FindObjectsOfType<SFXNode>();
+        foreach (var sfxNode in sfxNodes)
+        {
+            if (sfxNode == null) continue;
+            sfxNode.StopAndUnload();
+        }
     }
 
     // 1. Called when your mouse CLICKS DOWN on the slider
